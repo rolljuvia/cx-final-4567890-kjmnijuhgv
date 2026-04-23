@@ -426,14 +426,18 @@
         const mood = updateDailyMood();
         const status = getRandomStatus();
 
-        // 等公告页渲染完再注入
-        const tryInject = () => {
-            // 第一行大块"梦角今日状态" → 改成神谕 + 改标题
+        function doInject() {
+            // 第一行大块 → 改成神谕 + 改标题
             const moodNameEl = document.getElementById('dg-partner-mood');
             const sectionLabel = document.getElementById('dg-section-label-partner');
             const moodNoteEl = document.getElementById('dg-partner-mood-note');
+            
             if (moodNameEl && window._remoteMottos && window._remoteMottos.length > 0) {
-                const motto = window._remoteMottos[Math.floor(Math.random() * window._remoteMottos.length)];
+                // 用每日固定种子抽一句（同一天看到的都一样）
+                const today = new Date().toDateString();
+                let seed = 0;
+                for (let i = 0; i < today.length; i++) seed += today.charCodeAt(i);
+                const motto = window._remoteMottos[seed % window._remoteMottos.length];
                 moodNameEl.textContent = motto;
                 if (moodNoteEl) moodNoteEl.textContent = '';
             }
@@ -441,24 +445,46 @@
                 sectionLabel.textContent = '✦ 今日谕示';
             }
 
-            // 第二行右边"梦角的状态" → 保持简短状态
+            // 第二行右边"状态" → 从远程状态池抽
             const statusEl = document.getElementById('dg-status');
-            if (statusEl) statusEl.textContent = status;
+            if (statusEl && window._remoteStatuses && window._remoteStatuses.length > 0) {
+                statusEl.textContent = status;
+            }
 
-            // 每日寄语（底部引用框）
+            // 底部寄语
             const noteEl = document.getElementById('dg-note-text');
             if (noteEl && window._remoteMottos && window._remoteMottos.length > 0) {
-                // 用跟第一行不同的一句
-                const pool = [...window._remoteMottos];
-                const picked = pool[Math.floor(Math.random() * pool.length)];
+                const today = new Date().toDateString();
+                let seed2 = 7;
+                for (let i = 0; i < today.length; i++) seed2 += today.charCodeAt(i) * 3;
+                const picked = window._remoteMottos[seed2 % window._remoteMottos.length];
                 noteEl.textContent = picked + ' ✦';
             }
-        };
+        }
 
-        // 公告页可能延迟渲染，多试几次
-        setTimeout(tryInject, 1000);
-        setTimeout(tryInject, 2500);
-        setTimeout(tryInject, 4000);
+        // 监听公告页元素变化，原版代码写入后立刻覆盖
+        const observer = new MutationObserver(() => {
+            doInject();
+        });
+
+        // 等公告页元素出现后开始监听
+        const startObserving = () => {
+            const target = document.getElementById('dg-partner-mood');
+            if (target) {
+                // 先执行一次
+                doInject();
+                // 监听后续变化（原版代码可能延迟渲染）
+                observer.observe(target, { childList: true, characterData: true, subtree: true });
+                // 也监听标题
+                const label = document.getElementById('dg-section-label-partner');
+                if (label) observer.observe(label, { childList: true, characterData: true, subtree: true });
+                // 60秒后停止监听，避免无限循环
+                setTimeout(() => observer.disconnect(), 60000);
+            } else {
+                setTimeout(startObserving, 500);
+            }
+        };
+        startObserving();
     }
 
     window.YY_RemoteCards = {
