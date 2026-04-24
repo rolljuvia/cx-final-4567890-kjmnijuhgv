@@ -350,6 +350,20 @@
         window.simulateReply = function() {
             // YES/NO模式：走原版流程显示typing，但回复内容替换为YES/NO
             if (yyYesNoMode) {
+                // 先标记已读
+                if (typeof messages !== 'undefined') {
+                    let changed = false;
+                    messages.forEach(function(msg) {
+                        if (msg.sender === 'user' && msg.status !== 'read') {
+                            msg.status = 'read'; changed = true;
+                        }
+                    });
+                    if (changed) {
+                        if (typeof _updateReadReceiptsDOM === 'function') _updateReadReceiptsDOM();
+                        if (typeof throttledSaveData === 'function') throttledSaveData();
+                    }
+                }
+
                 const name = (typeof settings !== 'undefined' && settings.partnerName) || '对方';
                 // 概率：YES 40%, NO 40%, SIGNAL LOST 20%
                 const roll = Math.random();
@@ -399,6 +413,18 @@
             if (typeof messages !== 'undefined' && typeof stickerLibrary !== 'undefined') {
                 const lastMsg = messages[messages.length - 1];
                 if (lastMsg && lastMsg.sender === 'user' && lastMsg.image && !lastMsg.text) {
+                    // 先标记已读（原版simulateReply开头做的事）
+                    let changed = false;
+                    messages.forEach(function(msg) {
+                        if (msg.sender === 'user' && msg.status !== 'read') {
+                            msg.status = 'read'; changed = true;
+                        }
+                    });
+                    if (changed) {
+                        if (typeof _updateReadReceiptsDOM === 'function') _updateReadReceiptsDOM();
+                        if (typeof throttledSaveData === 'function') throttledSaveData();
+                    }
+
                     let disabledStickerItems = new Set();
                     try {
                         const raw = localStorage.getItem('disabledStickerItems');
@@ -434,7 +460,11 @@
                 }
             }
 
+            // 临时禁用原版表情包回复（只有用户发表情包时才回表情包）
+            const origStickerLib = window.stickerLibrary;
+            if (typeof stickerLibrary !== 'undefined') window.stickerLibrary = [];
             orig();
+            if (typeof stickerLibrary !== 'undefined') window.stickerLibrary = origStickerLib;
             // emoji蹦出
             if (Math.random() < EMOJI_CHANCE) {
                 const name = (typeof settings !== 'undefined' && settings.partnerName) || '对方';
