@@ -54,18 +54,6 @@ async function checkEnvelopeStatus() {
     if (changed) {
         saveEnvelopeData();
         if (newReplyLetter) {
-            // 在聊天界面显示居中小字提示（类似拍一拍）
-            if (typeof addMessage === 'function') {
-                const pName = (typeof settings !== 'undefined' && settings.partnerName) || '对方';
-                addMessage({
-                    id: Date.now() + 7777,
-                    sender: 'system',
-                    text: `✉ ${pName} 寄来了一封回信`,
-                    timestamp: new Date(),
-                    status: 'received',
-                    type: 'system'
-                });
-            }
             showEnvelopeReplyPopup(newReplyLetter);
         }
     }
