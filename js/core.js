@@ -796,10 +796,12 @@ function manageAutoSendTimer() {
         autoSendTimer = null;
     }
     if (settings.autoSendEnabled) {
-        // 随机间隔：5分钟 ~ 2小时
+        // 从 localStorage 读取自定义间隔（分钟），默认 5~120
         function scheduleNextAutoSend() {
-            const minMs = 5 * 60 * 1000;      // 5分钟
-            const maxMs = 120 * 60 * 1000;     // 2小时
+            const minMin = parseInt(localStorage.getItem('yy_autosend_min_minutes')) || 5;
+            const maxMin = parseInt(localStorage.getItem('yy_autosend_max_minutes')) || 120;
+            const minMs = minMin * 60 * 1000;
+            const maxMs = maxMin * 60 * 1000;
             const randomMs = minMs + Math.random() * (maxMs - minMs);
             autoSendTimer = setTimeout(() => {
                 if (!document.body.classList.contains('batch-favorite-mode')) {
