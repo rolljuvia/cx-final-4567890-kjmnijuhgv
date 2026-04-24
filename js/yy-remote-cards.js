@@ -324,59 +324,55 @@
 
     function injectYesNoCard() {
         const answer = Math.random() < 0.5 ? 'YES' : 'NO';
-        const cardId = 'yy-yesno-' + Date.now();
-
-        // 作为对方的消息插入
         const name = (typeof settings !== 'undefined' && settings.partnerName) || '对方';
-        if (typeof addMessage === 'function') {
-            addMessage({
-                id: Date.now() + 9999,
-                sender: name,
-                text: '___YESNO_CARD___' + cardId + '___' + answer,
-                timestamp: new Date(),
-                status: 'received',
-                favorited: false,
-                note: null,
-                type: 'normal'
-            });
-            if (typeof playSound === 'function') playSound('message');
-        }
 
-        // 替换消息文本为翻牌卡片
-        setTimeout(() => {
-            const allMsgs = document.querySelectorAll('.message-bubble, .msg-text, .message-text');
-            allMsgs.forEach(el => {
-                if (el.textContent.includes('___YESNO_CARD___' + cardId)) {
-                    el.innerHTML = '';
-                    el.style.background = 'transparent';
-                    el.style.border = 'none';
-                    el.style.boxShadow = 'none';
-                    el.style.padding = '0';
+        // 直接在聊天流底部插入翻牌卡片
+        const chatContainer = document.getElementById('chat-messages') || document.querySelector('.chat-messages');
+        if (!chatContainer) return;
 
-                    const card = document.createElement('div');
-                    card.className = 'yy-yesno-card';
-                    card.innerHTML = `
-                        <div class="yy-yesno-inner">
-                            <div class="yy-yesno-back">
-                                <span class="yy-yesno-symbol">✦</span>
-                                <span class="yy-yesno-hint">点击揭示</span>
-                            </div>
-                            <div class="yy-yesno-front yy-yesno-${answer.toLowerCase()}">
-                                <span class="yy-yesno-answer">${answer}</span>
-                            </div>
-                        </div>
-                    `;
-                    card.addEventListener('click', function() {
-                        if (!card.classList.contains('flipped')) {
-                            card.classList.add('flipped');
-                        }
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'display:flex;justify-content:flex-start;padding:4px 16px;';
+
+        const card = document.createElement('div');
+        card.className = 'yy-yesno-card';
+        card.innerHTML = `
+            <div class="yy-yesno-inner">
+                <div class="yy-yesno-back">
+                    <span class="yy-yesno-symbol">✦</span>
+                    <span class="yy-yesno-hint">点击揭示</span>
+                </div>
+                <div class="yy-yesno-front yy-yesno-${answer.toLowerCase()}">
+                    <span class="yy-yesno-answer">${answer}</span>
+                </div>
+            </div>
+        `;
+        card.addEventListener('click', function() {
+            if (!card.classList.contains('flipped')) {
+                card.classList.add('flipped');
+                if (typeof playSound === 'function') playSound('message');
+                // 翻牌后存入聊天记录
+                if (typeof addMessage === 'function') {
+                    addMessage({
+                        id: Date.now() + 9999,
+                        sender: name,
+                        text: answer,
+                        timestamp: new Date(),
+                        status: 'received',
+                        favorited: false,
+                        note: null,
+                        type: 'normal'
                     });
-                    el.appendChild(card);
                 }
-            });
-        }, 300);
+                // 移除卡片，聊天记录里已经有了
+                setTimeout(() => { wrapper.remove(); }, 800);
+            }
+        });
 
-        // 用完自动关闭 YES/NO 模式
+        wrapper.appendChild(card);
+        chatContainer.appendChild(wrapper);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        // 关闭 YES/NO 模式
         yyYesNoMode = false;
         const btn = document.getElementById('yy-yesno-btn');
         if (btn) {
@@ -394,6 +390,9 @@
         window.simulateReply = function() {
             // YES/NO模式：不走正常回复，直接翻牌
             if (yyYesNoMode) {
+                // 隐藏"正在输入"
+                const tiW = document.getElementById('typing-indicator-wrapper');
+                if (tiW) tiW.style.display = 'none';
                 setTimeout(() => {
                     injectYesNoCard();
                 }, 1000 + Math.random() * 2000);
