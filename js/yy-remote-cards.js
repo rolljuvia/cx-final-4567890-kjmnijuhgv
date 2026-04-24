@@ -565,6 +565,7 @@
                 clearInterval(wait);
                 enhanceSimulateReply();
                 initReplyDelaySettings();
+                initAutoSendSettings();
                 initYesNoButton();
                 console.log('[RemoteCards] 初始化完成');
             }
@@ -591,6 +592,51 @@
             if (v < 1) v = 1;
             maxInput.value = v;
             localStorage.setItem('yy_reply_max_minutes', v);
+        });
+    }
+
+    // ========== 主动消息间隔设置 ==========
+    function initAutoSendSettings() {
+        // 在设置页面找到回信延迟设置，在后面插入主动消息设置
+        const replyDelayMin = document.getElementById('yy-reply-delay-min');
+        if (!replyDelayMin) return;
+
+        // 找到回信延迟的容器
+        const replyContainer = replyDelayMin.closest('.yy-delay-setting') || replyDelayMin.parentElement.parentElement;
+        if (!replyContainer || document.getElementById('yy-autosend-min')) return;
+
+        const autoSendDiv = document.createElement('div');
+        autoSendDiv.className = 'yy-delay-setting';
+        autoSendDiv.style.cssText = 'margin-top:12px;padding:12px;background:var(--primary-bg,#f5f5f5);border-radius:12px;';
+        autoSendDiv.innerHTML = `
+            <div style="font-size:12px;color:var(--text-secondary,#999);margin-bottom:8px;">✦ 主动消息间隔（分钟）</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <input type="number" id="yy-autosend-min" min="1" style="width:60px;padding:6px 8px;border:1px solid var(--border-color,#ddd);border-radius:8px;background:var(--secondary-bg,#fff);color:var(--text-primary,#333);font-size:13px;text-align:center;" />
+                <span style="color:var(--text-secondary,#999);font-size:12px;">~</span>
+                <input type="number" id="yy-autosend-max" min="1" style="width:60px;padding:6px 8px;border:1px solid var(--border-color,#ddd);border-radius:8px;background:var(--secondary-bg,#fff);color:var(--text-primary,#333);font-size:13px;text-align:center;" />
+                <span style="color:var(--text-secondary,#999);font-size:12px;">分钟</span>
+            </div>
+        `;
+
+        replyContainer.parentElement.insertBefore(autoSendDiv, replyContainer.nextSibling);
+
+        const autoMin = document.getElementById('yy-autosend-min');
+        const autoMax = document.getElementById('yy-autosend-max');
+
+        autoMin.value = localStorage.getItem('yy_autosend_min_minutes') || '5';
+        autoMax.value = localStorage.getItem('yy_autosend_max_minutes') || '120';
+
+        autoMin.addEventListener('change', function() {
+            let v = parseInt(autoMin.value) || 1;
+            if (v < 1) v = 1;
+            autoMin.value = v;
+            localStorage.setItem('yy_autosend_min_minutes', v);
+        });
+        autoMax.addEventListener('change', function() {
+            let v = parseInt(autoMax.value) || 5;
+            if (v < 1) v = 1;
+            autoMax.value = v;
+            localStorage.setItem('yy_autosend_max_minutes', v);
         });
     }
 
