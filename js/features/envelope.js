@@ -161,7 +161,7 @@ window.openEnvelopeAndViewReply = function(replyId) {
 
 window.generateEnvelopeReplyText = function() {
     const sourcePool = [...customReplies];
-    const sentenceCount = Math.floor(Math.random() * (12 - 8 + 1)) + 8;
+    const sentenceCount = Math.floor(Math.random() * 3) + 1;
     let replyContent = "";
     for (let i = 0; i < sentenceCount; i++) {
         const randomSentence = sourcePool[Math.floor(Math.random() * sourcePool.length)];
@@ -485,8 +485,9 @@ function injectCardFlipButton(letter) {
     const viewContent = document.getElementById('env-view-content');
     if (!viewContent) return;
 
-    // 避免重复注入
-    if (document.getElementById('env-card-flip-btn')) return;
+    // 清除旧的翻牌按钮（解决打开不同信件时显示旧牌的问题）
+    const oldBtn = document.getElementById('env-card-flip-btn');
+    if (oldBtn) oldBtn.remove();
 
     const btnDiv = document.createElement('div');
     btnDiv.id = 'env-card-flip-btn';
