@@ -1054,8 +1054,15 @@
                             <div class="setting-pill-switch"><div class="setting-pill-knob"></div></div>
                         </div>
                         <div id="auto-send-control" style="display:none;">
-                            <div style="padding:6px 12px 10px;font-size:12px;color:var(--text-secondary);">
-                                开启后将在 5分钟 ~ 2小时 内随机发送消息
+                            <div style="padding:6px 12px 4px;font-size:12px;color:var(--text-secondary);">
+                                主动消息间隔（分钟）
+                            </div>
+                            <div style="display:flex;align-items:center;gap:8px;padding:4px 12px 12px;">
+                                <label style="font-size:12px;color:var(--text-secondary);">最短</label>
+                                <input type="number" id="yy-autosend-min" min="1" max="1440" value="5" style="width:64px;padding:5px 6px;border-radius:10px;border:1px solid var(--border-color);background:var(--primary-bg);color:var(--text-primary);font-size:13px;text-align:center;">
+                                <label style="font-size:12px;color:var(--text-secondary);">最长</label>
+                                <input type="number" id="yy-autosend-max" min="1" max="1440" value="120" style="width:64px;padding:5px 6px;border-radius:10px;border:1px solid var(--border-color);background:var(--primary-bg);color:var(--text-primary);font-size:13px;text-align:center;">
+                                <span style="font-size:12px;color:var(--text-secondary);">分钟</span>
                             </div>
                         </div>
                     </div>
