@@ -282,17 +282,28 @@
         };
     }
 
-    // ========== YES/NO 翻牌功能 ==========
+    // ========== YES/NO 功能 ==========
     let yyYesNoMode = false;
 
+    const YY_YESNO_REPLIES = [
+        '✦ 𝒀𝑬𝑺 ✦',
+        '✦ 𝒀𝑬𝑺 ✦',
+        '─ 𝒀𝑬𝑺 ─',
+        '⟡ 𝒀𝑬𝑺 ⟡',
+        '✧ 𝑵𝑶 ✧',
+        '✧ 𝑵𝑶 ✧',
+        '─ 𝑵𝑶 ─',
+        '⟡ 𝑵𝑶 ⟡',
+        '░▒▓ 𝑺𝑰𝑮𝑵𝑨𝑳 𝑳𝑶𝑺𝑻 ▓▒░',
+        '▓▒░ 𝑪𝑶𝑵𝑵𝑬𝑪𝑻𝑰𝑶𝑵 𝑭𝑨𝑰𝑳𝑬𝑫 ░▒▓'
+    ];
+
     function initYesNoButton() {
-        // 等输入框加载
         const waitInput = setInterval(() => {
             const inputArea = document.querySelector('.input-area');
             if (!inputArea) return;
             clearInterval(waitInput);
 
-            // 避免重复
             if (document.getElementById('yy-yesno-btn')) return;
 
             const btn = document.createElement('button');
@@ -314,7 +325,6 @@
                 }
             });
 
-            // 插入到 textarea 前面
             const textarea = document.getElementById('message-input');
             if (textarea) {
                 inputArea.insertBefore(btn, textarea);
@@ -322,55 +332,27 @@
         }, 500);
     }
 
-    function injectYesNoCard() {
-        const answer = Math.random() < 0.5 ? 'YES' : 'NO';
+    function sendYesNoReply() {
         const name = (typeof settings !== 'undefined' && settings.partnerName) || '对方';
+        const reply = YY_YESNO_REPLIES[Math.floor(Math.random() * YY_YESNO_REPLIES.length)];
 
-        // 直接在聊天流底部插入翻牌卡片
-        const chatContainer = document.getElementById('chat-messages') || document.querySelector('.chat-messages');
-        if (!chatContainer) return;
+        // 隐藏"正在输入"
+        const tiW = document.getElementById('typing-indicator-wrapper');
+        if (tiW) tiW.style.display = 'none';
 
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'display:flex;justify-content:flex-start;padding:4px 16px;';
-
-        const card = document.createElement('div');
-        card.className = 'yy-yesno-card';
-        card.innerHTML = `
-            <div class="yy-yesno-inner">
-                <div class="yy-yesno-back">
-                    <span class="yy-yesno-symbol">✦</span>
-                    <span class="yy-yesno-hint">点击揭示</span>
-                </div>
-                <div class="yy-yesno-front yy-yesno-${answer.toLowerCase()}">
-                    <span class="yy-yesno-answer">${answer}</span>
-                </div>
-            </div>
-        `;
-        card.addEventListener('click', function() {
-            if (!card.classList.contains('flipped')) {
-                card.classList.add('flipped');
-                if (typeof playSound === 'function') playSound('message');
-                // 翻牌后存入聊天记录
-                if (typeof addMessage === 'function') {
-                    addMessage({
-                        id: Date.now() + 9999,
-                        sender: name,
-                        text: answer,
-                        timestamp: new Date(),
-                        status: 'received',
-                        favorited: false,
-                        note: null,
-                        type: 'normal'
-                    });
-                }
-                // 移除卡片，聊天记录里已经有了
-                setTimeout(() => { wrapper.remove(); }, 800);
-            }
-        });
-
-        wrapper.appendChild(card);
-        chatContainer.appendChild(wrapper);
-        chatContainer.scrollTop = chatContainer.scrollHeight;
+        if (typeof addMessage === 'function') {
+            addMessage({
+                id: Date.now() + 9999,
+                sender: name,
+                text: reply,
+                timestamp: new Date(),
+                status: 'received',
+                favorited: false,
+                note: null,
+                type: 'normal'
+            });
+            if (typeof playSound === 'function') playSound('message');
+        }
 
         // 关闭 YES/NO 模式
         yyYesNoMode = false;
@@ -388,14 +370,14 @@
         if (!orig) return;
 
         window.simulateReply = function() {
-            // YES/NO模式：不走正常回复，直接翻牌
+            // YES/NO模式：不走正常回复，直接文字回复
             if (yyYesNoMode) {
                 // 隐藏"正在输入"
                 const tiW = document.getElementById('typing-indicator-wrapper');
                 if (tiW) tiW.style.display = 'none';
                 setTimeout(() => {
-                    injectYesNoCard();
-                }, 1000 + Math.random() * 2000);
+                    sendYesNoReply();
+                }, 800 + Math.random() * 1500);
                 return;
             }
 
@@ -506,44 +488,6 @@
                 cursor:pointer; letter-spacing:2px; transition:all 0.3s;
             }
             .yy-flip-done-btn:active { background:rgba(197,164,126,0.15); }
-            /* YES/NO 翻牌样式 */
-            .yy-yesno-card {
-                width:120px; height:60px; perspective:600px; cursor:pointer;
-                margin:4px 0;
-            }
-            .yy-yesno-inner {
-                position:relative; width:100%; height:100%;
-                transition: transform 0.5s cubic-bezier(0.25,0.8,0.25,1);
-                transform-style: preserve-3d;
-            }
-            .yy-yesno-card.flipped .yy-yesno-inner { transform: rotateY(180deg); }
-            .yy-yesno-back, .yy-yesno-front {
-                position:absolute; inset:0; backface-visibility:hidden;
-                border-radius:10px; display:flex; flex-direction:column;
-                align-items:center; justify-content:center;
-            }
-            .yy-yesno-back {
-                background:linear-gradient(145deg, #1a1a2e, #16213e);
-                border:1px solid rgba(255,255,255,0.1);
-            }
-            .yy-yesno-symbol { font-size:18px; color:rgba(197,164,126,0.6); }
-            .yy-yesno-hint { font-size:9px; color:#555; margin-top:2px; animation: yyPulse 2s ease-in-out infinite; }
-            .yy-yesno-front {
-                transform: rotateY(180deg);
-                border:1px solid rgba(197,164,126,0.3);
-            }
-            .yy-yesno-front.yy-yesno-yes {
-                background:linear-gradient(145deg, #1a2e1a, #1e3a1e);
-            }
-            .yy-yesno-front.yy-yesno-no {
-                background:linear-gradient(145deg, #2e1a1a, #3a1e1e);
-            }
-            .yy-yesno-answer {
-                font-size:22px; font-weight:700; letter-spacing:4px;
-                font-family:'Noto Serif SC',serif;
-            }
-            .yy-yesno-yes .yy-yesno-answer { color:#6abf69; }
-            .yy-yesno-no .yy-yesno-answer { color:#cf6b6b; }
         `;
         document.head.appendChild(style);
     }
