@@ -34,6 +34,27 @@
                 customReplies.push(...remoteCards.chat);
                 window._customReplies = customReplies;
             }
+
+            // 加载分组到原版 customReplyGroups
+            if (remoteCards.chat_groups) {
+                const groups = [];
+                const allGroupItems = [];
+                for (const [groupName, items] of Object.entries(remoteCards.chat_groups)) {
+                    groups.push({ name: groupName, items: items, disabled: false });
+                    allGroupItems.push(...items);
+                }
+                window.customReplyGroups = groups;
+                // 分组里的字卡也要在总池里，否则原版过滤逻辑会跳过它们
+                const existingSet = new Set(customReplies);
+                allGroupItems.forEach(item => {
+                    if (!existingSet.has(item)) {
+                        customReplies.push(item);
+                        existingSet.add(item);
+                    }
+                });
+                window._customReplies = customReplies;
+            }
+
             if (remoteCards.emoji) window._remoteEmojis = remoteCards.emoji;
             if (remoteCards.statuses) window._remoteStatuses = remoteCards.statuses;
             if (remoteCards.moods) window._remoteMoods = remoteCards.moods;
@@ -78,7 +99,7 @@
         const oracle = remoteCards.letter.oracle || [];
         if (daily.length === 0) return null;
 
-        const count = 3 + Math.floor(Math.random() * 3); // 3-5句
+        const count = 1 + Math.floor(Math.random() * 3); // 1-3句
         const sentences = [];
         const used = new Set();
         let oracleUsed = false;
@@ -423,17 +444,15 @@
 
     // ========== 公告页状态注入 ==========
     function injectDailyStatus() {
-        const mood = updateDailyMood();
         const status = getRandomStatus();
 
         function doInject() {
-            // 第一行大块 → 改成神谕 + 改标题
+            // ① 号位：神谕句
             const moodNameEl = document.getElementById('dg-partner-mood');
             const sectionLabel = document.getElementById('dg-section-label-partner');
             const moodNoteEl = document.getElementById('dg-partner-mood-note');
             
             if (moodNameEl && window._remoteMottos && window._remoteMottos.length > 0) {
-                // 用每日固定种子抽一句（同一天看到的都一样）
                 const today = new Date().toDateString();
                 let seed = 0;
                 for (let i = 0; i < today.length; i++) seed += today.charCodeAt(i);
@@ -445,13 +464,35 @@
                 sectionLabel.textContent = '✦ 今日谕示';
             }
 
-            // 第二行右边"状态" → 从远程状态池抽
+            // ② 号位：读取心晴手帐里梦角当天的心情，显示 emoji + 日记
+            const partnerMoodContainer = document.getElementById('dg-mood-display');
+            if (partnerMoodContainer && window.moodData) {
+                const today = new Date();
+                const y = today.getFullYear();
+                const m = String(today.getMonth() + 1).padStart(2, '0');
+                const d = String(today.getDate()).padStart(2, '0');
+                const dateStr = y + '-' + m + '-' + d;
+                const dayData = window.moodData[dateStr];
+                if (dayData && dayData.partner) {
+                    // 找到心情 emoji
+                    const MOOD_MAP = {
+                        'happy': '😆', 'excited': '🥰', 'peace': '☺️', 'sad': '😕',
+                        'tired': '😞', 'angry': '😠', 'love': '🥰', 'busy': '😵‍💫',
+                        'sleepy': '😴', 'lonely': '🥹', 'cool': '😎', 'cute': '🥺'
+                    };
+                    const emoji = MOOD_MAP[dayData.partner] || '☺️';
+                    const note = dayData.partnerNote || '今天没什么特别的';
+                    partnerMoodContainer.innerHTML = '<span style="font-size:20px;margin-right:6px;">' + emoji + '</span> ' + note;
+                }
+            }
+
+            // ④ 号位：状态（从远程状态池抽）
             const statusEl = document.getElementById('dg-status');
             if (statusEl && window._remoteStatuses && window._remoteStatuses.length > 0) {
                 statusEl.textContent = status;
             }
 
-            // 底部寄语
+            // ⑤ 号位：底部寄语
             const noteEl = document.getElementById('dg-note-text');
             if (noteEl && window._remoteMottos && window._remoteMottos.length > 0) {
                 const today = new Date().toDateString();
