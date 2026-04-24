@@ -1,4 +1,57 @@
-REPOS=(
-  "xiaoyi-cx-adwed2141209uejh21mec129me01"
-  "cx-角色B-仓库名"
-)
+name: Sync to character repos
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Sync to all character repos
+        env:
+          TOKEN: ${{ secrets.SYNC_TOKEN }}
+          OWNER: rolljuvia
+        run: |
+          REPOS=("xiaoyi-cx-adwed2141209uejh21mec129me01")
+
+          if [ ${#REPOS[@]} -eq 0 ]; then
+            echo "没有配置角色仓库，跳过同步"
+            exit 0
+          fi
+
+          git config --global user.name "sync-bot"
+          git config --global user.email "sync@noreply.github.com"
+
+          for REPO in "${REPOS[@]}"; do
+            echo "══════ 同步到 $REPO ══════"
+            CLONE_DIR="/tmp/$REPO"
+            rm -rf "$CLONE_DIR"
+
+            git clone "https://x-access-token:${TOKEN}@github.com/${OWNER}/${REPO}.git" "$CLONE_DIR" 2>/dev/null
+
+            if [ $? -ne 0 ]; then
+              echo "❌ 克隆 $REPO 失败，跳过"
+              continue
+            fi
+
+            rsync -av --delete \
+              --exclude='.git' \
+              --exclude='.github' \
+              ./ "$CLONE_DIR/"
+
+            cd "$CLONE_DIR"
+            git add -A
+            if git diff --staged --quiet; then
+              echo "✅ $REPO 无变化，跳过"
+            else
+              git commit -m "sync from main repo $(date +%Y-%m-%d)"
+              git push
+              echo "✅ $REPO 同步完成"
+            fi
+            cd -
+          done
