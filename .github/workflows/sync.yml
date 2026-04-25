@@ -17,7 +17,7 @@ jobs:
           TOKEN: ${{ secrets.SYNC_TOKEN }}
           OWNER: rolljuvia
         run: |
-          REPOS=("xiaoyi-cx-adwed2141209uejh21mec129me01")
+          REPOS=("xiaoyi-cx-adwed2141209uejh21mec129me01" "luchen-cx-adwed2141209uejh21mec129me01")
 
           if [ ${#REPOS[@]} -eq 0 ]; then
             echo "没有配置角色仓库，跳过同步"
